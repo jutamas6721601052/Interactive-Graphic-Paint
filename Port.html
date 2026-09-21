@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Shader Starter</title>
+  <style>
+    html, body { height: 100%; margin: 0; }
+    canvas { display: block; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+</head>
+<body>
+<script>
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  document.body.appendChild(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x111111);
+
+  const camera = new THREE.PerspectiveCamera(
+    60,
+    innerWidth / innerHeight,
+    0.1,
+    100
+  );
+  camera.position.set(0, 0, 5);
+
+  const controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+  // ค่าที่ส่งจาก JavaScript เข้า shader
+  const uniforms = {
+    uTime: { value: 0.0 }
+  };
+
+  const vertexShader = `
+    uniform float uTime;
+    varying vec2 vUv;
+    varying float vHigh;
+    
+    void main() {
+      vUv = uv;
+      vec3 pos = position;
+
+      // คำนวณความสูงระลอกคลื่นด้วย sin ตามเวลา
+      // vHigh = sin(pos.x * 5.0 + uTime * 3.0) * 0.1;
+      
+      // // ดันตำแหน่งตามแนว Normal
+      // pos = pos + (normal * vHigh);
+  
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+    }
+  `;
+
+  const fragmentShader = `
+    precision mediump float;
+    uniform float uTime;
+    varying vec2 vUv;
+    varying float vHigh;
+    
+    void main() {
+      // สร้างสีเปลี่ยนตาม UV และ vHigh
+      vec3 color = vec3(0.8, 0.4, 0.5);
+      gl_FragColor = vec4(color, 1.0);
+    }
+  `;
+
+  const material = new THREE.ShaderMaterial({
+    vertexShader,
+    fragmentShader,
+    uniforms,
+    side: THREE.DoubleSide
+  });
+
+  // โหลดไฟล์ .glb
+  const loader = new THREE.GLTFLoader();
+  
+  loader.load('https://jutamas6721601052.github.io/Interactive-Graphic-Paint/model.glb', (gltf) => {
+    const model = gltf.scene;
+
+    model.traverse((child) => {
+      if (child.isMesh) {
+        child.material = material;
+      }
+    });
+
+    scene.add(model);
+  }, undefined, (error) => {
+    console.error('เกิดข้อผิดพลาดในการโหลดโมเดล:', error);
+  });
+
+  addEventListener('resize', () => {
+    camera.aspect = innerWidth / innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  });
+
+  function animate(time) {
+    uniforms.uTime.value = time * 0.001;
+    controls.update();
+    renderer.render(scene, camera);
+    requestAnimationFrame(animate);
+  }
+
+  requestAnimationFrame(animate);
+</script>
+</body>
+</html>
