@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Portfolio</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- core three.js -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/EXRLoader.js"></script>
+
+    <script>
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.outputEncoding = THREE.sRGBEncoding;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.0;
+        document.body.appendChild(renderer.domElement);
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xf2f2f2);
+
+        const camera = new THREE.PerspectiveCamera(
+            75,
+            window.innerWidth / window.innerHeight,
+            0.1,
+            1000
+        );
+        camera.position.set(20, 20, 20);
+        camera.lookAt(0, 0, 0);
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+        const abmientLight = new THREE.AmbientLight(0x404040, 1);
+        scene.add(abmientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+        directionalLight.position.set(10, 10, 10);
+        directionalLight.castShadow = true;
+        scene.add(directionalLight);
+
+        const ray = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        const clock = new THREE.Clock();
+
+        const mixers = [];
+        let action1, action2;
+
+        const loader = new THREE.GLTFLoader();
+
+
+        loader.load('https://jutamas6721601052.github.io/Interactive-Graphic-Paint/port3.glb', (gltf) => {
+            const model = gltf.scene;
+            model.name = 'port3_model';
+            model.traverse((child) => {
+                if (child.isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                }
+            });
+            model.position.set(0, 0, 1);
+            model.scale.set(1, 1, 1);
+            scene.add(model);
+
+            const port3Mixer = new THREE.AnimationMixer(model);
+            mixers.push(port3Mixer);
+
+            const clip = THREE.AnimationClip.findByName(gltf.animations, 'Plane.011Action');
+            if (clip) {
+                action1 = port3Mixer.clipAction(clip);
+                action1.setLoop(THREE.LoopOnce);
+                action1.clampWhenFinished = true;
+            }
+        });
+
+        loader.load('https://jutamas6721601052.github.io/Interactive-Graphic-Paint/port1.glb', (gltf) => {
+            const model = gltf.scene;
+            model.name = 'port1_model';
+            model.traverse((child) => {
+                if (child.isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                }
+            });
+            model.position.set(0, 0, 1);
+            model.scale.set(1, 1, 1);
+            scene.add(model);
+
+            const port1Mixer = new THREE.AnimationMixer(model);
+            mixers.push(port1Mixer);
+
+            const clip = THREE.AnimationClip.findByName(gltf.animations, 'Plane.010Action');
+            if (clip) {
+                action2 = port1Mixer.clipAction(clip);
+                action2.setLoop(THREE.LoopOnce);
+                action2.clampWhenFinished = true;
+            }
+        });
+
+        loader.load('https://jutamas6721601052.github.io/Interactive-Graphic-Paint/box.glb', (gltf) => {
+            const model = gltf.scene;
+            model.traverse((child) => {
+                if (child.isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                }
+            });
+            model.position.set(0, 0, 1);
+            model.scale.set(1, 1, 1);
+            scene.add(model);
+
+            const boxMixer = new THREE.AnimationMixer(model);
+            mixers.push(boxMixer);
+
+            const clip = THREE.AnimationClip.findByName(gltf.animations, 'opened');
+            if (clip) boxMixer.clipAction(clip).play();
+        });
+
+        const modelURL = [
+            'https://jutamas6721601052.github.io/Interactive-Graphic-Paint/room1glb.glb',
+            'https://jutamas6721601052.github.io/Interactive-Graphic-Paint/glass.glb',
+            'https://jutamas6721601052.github.io/Interactive-Graphic-Paint/lamp.glb',
+            'https://jutamas6721601052.github.io/Interactive-Graphic-Paint/name.glb',
+            'https://jutamas6721601052.github.io/Interactive-Graphic-Paint/carpet.glb',
+            'https://jutamas6721601052.github.io/Interactive-Graphic-Paint/table.glb',
+            'https://jutamas6721601052.github.io/Interactive-Graphic-Paint/chair.glb',
+            'https://jutamas6721601052.github.io/Interactive-Graphic-Paint/bed.glb',
+            'https://jutamas6721601052.github.io/Interactive-Graphic-Paint/pillowbig.glb',
+            'https://jutamas6721601052.github.io/Interactive-Graphic-Paint/pillowsmall.glb',
+            'https://jutamas6721601052.github.io/Interactive-Graphic-Paint/me.glb',
+            'https://jutamas6721601052.github.io/Interactive-Graphic-Paint/book.glb',
+            'https://jutamas6721601052.github.io/Interactive-Graphic-Paint/hugo.glb',
+            'https://jutamas6721601052.github.io/Interactive-Graphic-Paint/sofa.glb'
+        ];
+
+        for (let i = 0; i < modelURL.length; i++) {
+            loader.load(modelURL[i], (gltf) => {
+                const model = gltf.scene;
+                model.traverse((child) => {
+                    if (child.isMesh) {
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                    }
+                });
+                model.position.set(0, 0, 1);
+                model.scale.set(1, 1, 1);
+                scene.add(model);
+            });
+        }
+
+        function animate(t) {
+            const delta = clock.getDelta();
+            
+            mixers.forEach((m)=>m.update(delta));
+            
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+        animate(0);
+
+        window.addEventListener('click', (event) => {
+            mouse.x=(event.clientX/window.innerWidth)*2-1;
+            mouse.y=-(event.clientY/window.innerHeight)*2+1;
+
+            ray.setFromCamera(mouse,camera);
+            const hits=ray.intersectObjects(scene.children,true);
+
+            if (hits.length>0) {
+                const obj=hits[0].object;
+
+                let rootModel=obj;
+                while (rootModel.parent&&rootModel.parent!==scene){
+                    rootModel = rootModel.parent;
+                }
+
+                if (rootModel.name==='port3_model'&&action1){
+                    action1.reset().play();
+                } else if (rootModel.name==='port1_model'&&action2){
+                    action2.reset().play();
+                }
+                const box=new THREE.Box3().setFromObject(obj);
+                const center=new THREE.Vector3();
+                const size=new THREE.Vector3();
+                box.getCenter(center);
+                box.getSize(size);
+
+                const maxDim=Math.max(size.x,size.y,size.z);
+                const distance=Math.max(maxDim*1.2,5);
+
+                const direction=new THREE.Vector3()
+                    .subVectors(camera.position,controls.target)
+                    .normalize();
+
+                controls.target.copy(center);
+                camera.position.copy(center).add(direction.multiplyScalar(distance));
+                controls.update();
+            }
+        });
+
+    </script>
+</body>
+
+</html>
