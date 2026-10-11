@@ -1,215 +1,277 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="th">
 <head>
-    <title>Portfolio</title>
-    <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-        }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Portfolio</title>
+  <style>
+    html, body { height: 100%; margin: 0; }
+    canvas { display: block; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 </head>
-
 <body>
-    <!-- core three.js -->
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/EXRLoader.js"></script>
+<script>
+  // Scene / Camera / Renderer
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xFFFFFF);
 
-    <script>
+  const camera = new THREE.PerspectiveCamera(
+    60,
+    innerWidth / innerHeight,
+    0.1,
+    100
+  );
+  camera.position.set(0, 3, 20);
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        renderer.outputEncoding = THREE.sRGBEncoding;
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.0;
-        document.body.appendChild(renderer.domElement);
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  document.body.appendChild(renderer.domElement);
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.NoToneMapping;
+  renderer.toneMappingExposure = 1.0;
+  const controls = new THREE.OrbitControls(camera, renderer.domElement);
 
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0xf2f2f2);
+  controls.addEventListener('start', () => {
+    isFocusing = false;
+  });
 
-        const camera = new THREE.PerspectiveCamera(
-            75,
-            window.innerWidth / window.innerHeight,
-            0.1,
-            1000
-        );
-        camera.position.set(20, 20, 20);
-        camera.lookAt(0, 0, 0);
-        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+  scene.add(ambientLight);
 
-        const abmientLight = new THREE.AmbientLight(0x404040, 1);
-        scene.add(abmientLight);
+  const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
+  dirLight.position.set(5, 10, 7.5);
+  scene.add(dirLight);
 
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-        directionalLight.position.set(10, 10, 10);
-        directionalLight.castShadow = true;
-        scene.add(directionalLight);
-
-        const ray = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
-        const clock = new THREE.Clock();
-
-        const mixers = [];
-        let action1, action2;
-
-        const loader = new THREE.GLTFLoader();
+  const clock = new THREE.Clock();
+  const mixers = [];
 
 
-        loader.load('https://jutamas6721601052.github.io/Interactive-Graphic-Paint/port3.glb', (gltf) => {
-            const model = gltf.scene;
-            model.name = 'port3_model';
-            model.traverse((child) => {
-                if (child.isMesh) {
-                    child.castShadow = true;
-                    child.receiveShadow = true;
-                }
-            });
-            model.position.set(0, 0, 1);
-            model.scale.set(1, 1, 1);
-            scene.add(model);
+  const globalUniforms = {
+    uTime: { value: 0.0 },
+    uLightDir: { value: new THREE.Vector3(0.4, 1.0, 0.8).normalize() },
+    uOutlineThickness: { value: 0.01 }
+  };
 
-            const port3Mixer = new THREE.AnimationMixer(model);
-            mixers.push(port3Mixer);
 
-            const clip = THREE.AnimationClip.findByName(gltf.animations, 'Plane.011Action');
-            if (clip) {
-                action1 = port3Mixer.clipAction(clip);
-                action1.setLoop(THREE.LoopOnce);
-                action1.clampWhenFinished = true;
-            }
-        });
-
-        loader.load('https://jutamas6721601052.github.io/Interactive-Graphic-Paint/port1.glb', (gltf) => {
-            const model = gltf.scene;
-            model.name = 'port1_model';
-            model.traverse((child) => {
-                if (child.isMesh) {
-                    child.castShadow = true;
-                    child.receiveShadow = true;
-                }
-            });
-            model.position.set(0, 0, 1);
-            model.scale.set(1, 1, 1);
-            scene.add(model);
-
-            const port1Mixer = new THREE.AnimationMixer(model);
-            mixers.push(port1Mixer);
-
-            const clip = THREE.AnimationClip.findByName(gltf.animations, 'Plane.010Action');
-            if (clip) {
-                action2 = port1Mixer.clipAction(clip);
-                action2.setLoop(THREE.LoopOnce);
-                action2.clampWhenFinished = true;
-            }
-        });
-
-        loader.load('https://jutamas6721601052.github.io/Interactive-Graphic-Paint/box.glb', (gltf) => {
-            const model = gltf.scene;
-            model.traverse((child) => {
-                if (child.isMesh) {
-                    child.castShadow = true;
-                    child.receiveShadow = true;
-                }
-            });
-            model.position.set(0, 0, 1);
-            model.scale.set(1, 1, 1);
-            scene.add(model);
-
-            const boxMixer = new THREE.AnimationMixer(model);
-            mixers.push(boxMixer);
-
-            const clip = THREE.AnimationClip.findByName(gltf.animations, 'opened');
-            if (clip) boxMixer.clipAction(clip).play();
-        });
-
-        const modelURL = [
-            'https://jutamas6721601052.github.io/Interactive-Graphic-Paint/room1glb.glb',
-            'https://jutamas6721601052.github.io/Interactive-Graphic-Paint/glass.glb',
-            'https://jutamas6721601052.github.io/Interactive-Graphic-Paint/lamp.glb',
-            'https://jutamas6721601052.github.io/Interactive-Graphic-Paint/name.glb',
-            'https://jutamas6721601052.github.io/Interactive-Graphic-Paint/carpet.glb',
-            'https://jutamas6721601052.github.io/Interactive-Graphic-Paint/table.glb',
-            'https://jutamas6721601052.github.io/Interactive-Graphic-Paint/chair.glb',
-            'https://jutamas6721601052.github.io/Interactive-Graphic-Paint/bed.glb',
-            'https://jutamas6721601052.github.io/Interactive-Graphic-Paint/pillowbig.glb',
-            'https://jutamas6721601052.github.io/Interactive-Graphic-Paint/pillowsmall.glb',
-            'https://jutamas6721601052.github.io/Interactive-Graphic-Paint/me.glb',
-            'https://jutamas6721601052.github.io/Interactive-Graphic-Paint/book.glb',
-            'https://jutamas6721601052.github.io/Interactive-Graphic-Paint/hugo.glb',
-            'https://jutamas6721601052.github.io/Interactive-Graphic-Paint/sofa.glb'
-        ];
-
-        for (let i = 0; i < modelURL.length; i++) {
-            loader.load(modelURL[i], (gltf) => {
-                const model = gltf.scene;
-                model.traverse((child) => {
-                    if (child.isMesh) {
-                        child.castShadow = true;
-                        child.receiveShadow = true;
-                    }
-                });
-                model.position.set(0, 0, 1);
-                model.scale.set(1, 1, 1);
-                scene.add(model);
-            });
+  function createToonMaterial(textureMap, colorHex = 0xffffff, enableWave = false) {
+    return new THREE.ShaderMaterial({
+      uniforms: {
+        uTime: globalUniforms.uTime,
+        uLightDir: globalUniforms.uLightDir,
+        uTexture: { value: textureMap },
+        uHasTexture: { value: textureMap ? 1.0 : 0.0 },
+        uBaseColor: { value: new THREE.Color(colorHex) }
+      },
+      vertexShader: `
+        uniform float uTime;
+        varying vec3 vNormal;
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          vNormal = normalMatrix * normal;
+          vec3 pos = position;
+          ${enableWave ? 'pos.z += sin(pos.x * 5.0 + uTime * 2.0) * 0.15;' : ''}
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
         }
+      `,
+      fragmentShader: `
+        precision mediump float;
+        uniform sampler2D uTexture;
+        uniform float uHasTexture;
+        uniform vec3 uBaseColor;
+        uniform vec3 uLightDir;
+        varying vec3 vNormal;
+        varying vec2 vUv;
+        void main() {
+          vec3 N = normalize(vNormal);
+          vec3 L = normalize(uLightDir);
 
-        function animate(t) {
-            const delta = clock.getDelta();
-            
-            mixers.forEach((m)=>m.update(delta));
-            
-            renderer.render(scene, camera);
-            requestAnimationFrame(animate);
+          vec3 texColor = (uHasTexture > 0.5) ? texture2D(uTexture, vUv).rgb : vec3(1.0);
+          vec3 color = texColor * uBaseColor;
+          
+          float ambient = 0.35;
+          float diffuse = max(dot(N, L), 0.0);
+          diffuse = smoothstep(0.1, 0.2, diffuse);
+          
+          vec3 finalColor = color * (diffuse + ambient);
+          gl_FragColor = vec4(finalColor, 1.0);
         }
-        animate(0);
+      `,
+      side: THREE.DoubleSide
+    });
+  }
 
-        window.addEventListener('click', (event) => {
-            mouse.x=(event.clientX/window.innerWidth)*2-1;
-            mouse.y=-(event.clientY/window.innerHeight)*2+1;
+  function createOutlineMaterial(enableWave = false) {
+    return new THREE.ShaderMaterial({
+      uniforms: {
+        uTime: globalUniforms.uTime,
+        uOutlineThickness: globalUniforms.uOutlineThickness
+      },
+      vertexShader: `
+        uniform float uTime;
+        uniform float uOutlineThickness;
+        void main() {
+          vec3 pos = position;
+          pos += normal * uOutlineThickness;
+          ${enableWave ? 'pos.z += sin(pos.x * 5.0 + uTime * 2.0) * 0.15;' : ''}
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+        }
+      `,
+      fragmentShader: `
+        precision mediump float;
+        void main() {
+          gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+        }
+      `,
+      side: THREE.BackSide
+    });
+  }
 
-            ray.setFromCamera(mouse,camera);
-            const hits=ray.intersectObjects(scene.children,true);
 
-            if (hits.length>0) {
-                const obj=hits[0].object;
+  const pickables = [];
+  const raycaster = new THREE.Raycaster();
+  const pointer = new THREE.Vector2();
+  let picked_object = null;
 
-                let rootModel=obj;
-                while (rootModel.parent&&rootModel.parent!==scene){
-                    rootModel = rootModel.parent;
-                }
+  const targetCameraPos = new THREE.Vector3();
+  const targetControlsTarget = new THREE.Vector3();
+  let isFocusing = false;
 
-                if (rootModel.name==='port3_model'&&action1){
-                    action1.reset().play();
-                } else if (rootModel.name==='port1_model'&&action2){
-                    action2.reset().play();
-                }
-                const box=new THREE.Box3().setFromObject(obj);
-                const center=new THREE.Vector3();
-                const size=new THREE.Vector3();
-                box.getCenter(center);
-                box.getSize(size);
+  renderer.domElement.addEventListener('click', onPick);
+  function onPick(e) {
+    const r = renderer.domElement.getBoundingClientRect();
+    const x = (e.clientX ?? e.touches[0].clientX) - r.left;
+    const y = (e.clientY ?? e.touches[0].clientY) - r.top;
+    pointer.x = (x / r.width) * 2 - 1;
+    pointer.y = -(y / r.height) * 2 + 1;
 
-                const maxDim=Math.max(size.x,size.y,size.z);
-                const distance=Math.max(maxDim*1.2,5);
+    raycaster.setFromCamera(pointer, camera);
+    const hit = raycaster.intersectObjects(pickables, true)[0];
+    
+    if (hit == null) {
+      picked_object = null;
+      isFocusing = false;
+      return;
+    } 
+    picked_object = hit.object;
+    console.log('Picked object name:', picked_object.name);
 
-                const direction=new THREE.Vector3()
-                    .subVectors(camera.position,controls.target)
-                    .normalize();
+    const box = new THREE.Box3().setFromObject(picked_object);
+    const center = box.getCenter(new THREE.Vector3());
+    const sphere = box.getBoundingSphere(new THREE.Sphere());
 
-                controls.target.copy(center);
-                camera.position.copy(center).add(direction.multiplyScalar(distance));
-                controls.update();
-            }
+    const fovRad = (camera.fov * Math.PI) / 180;
+    let zoomDistance = (sphere.radius / Math.sin(fovRad / 2)) * 1.2;
+    zoomDistance = Math.max(zoomDistance, 1.8);
+
+    const currentDir = camera.position.clone().sub(controls.target).normalize();
+    currentDir.y = Math.max(currentDir.y, 0.15);
+    currentDir.normalize();
+
+    targetCameraPos.copy(center).add(currentDir.multiplyScalar(zoomDistance));
+    targetControlsTarget.copy(center);
+
+    isFocusing = true;
+  }
+
+  const gltfLoader = new THREE.GLTFLoader();
+
+  function addPickableObject(name, URL, scale = 1.0, allowedMeshNames = null, shaderOptions = {}) {
+    const { useToonShader = false, colorHex = 0xffffff, enableWave = false } = shaderOptions;
+
+    gltfLoader.load(URL, (gltf) => {
+      const model = gltf.scene;
+      model.name = name;
+      model.scale.setScalar(scale);
+
+      if (useToonShader) {
+        model.traverse((child) => {
+          if (child.isMesh) {
+            const origMap = child.material ? child.material.map : null;
+            child.material = createToonMaterial(origMap, colorHex, enableWave);
+          }
         });
 
-    </script>
+        const outlineModel = model.clone();
+        outlineModel.traverse((child) => {
+          if (child.isMesh) {
+            child.material = createOutlineMaterial(enableWave);
+          }
+        });
+        scene.add(outlineModel);
+      }
+
+      model.traverse((child) => {
+        if (child.isMesh) {
+          if (allowedMeshNames === null || allowedMeshNames.length === 0 || allowedMeshNames.includes(child.name)) {
+            pickables.push(child);
+          }
+        }
+      });
+
+      if (gltf.animations && gltf.animations.length > 0) {
+        const mixer = new THREE.AnimationMixer(model);
+        gltf.animations.forEach((clip) => {
+          const action = mixer.clipAction(clip);
+          action.play();
+        });
+        mixers.push(mixer);
+      }
+
+      scene.add(model);
+    }, undefined, (err) => {
+      console.error('An error happened loading the GLB model:', err);
+    });
+  }
+
+  addPickableObject(
+    'inner', 
+    'https://jutamas6721601052.github.io/Interactive-Graphic-Paint/inner.glb', 
+    1.0, 
+    ['Plane056','Plane009_1'],
+    { useToonShader: false, enableWave: false }
+  );
+
+  addPickableObject(
+    'home', 
+    'https://jutamas6721601052.github.io/Interactive-Graphic-Paint/home.glb', 
+    1.0, 
+    ['Cube.011', 'Cube.006', 'Plane.056', 'Plane002'], 
+    { useToonShader: true, colorHex: 0xD2B48C, enableWave: false }
+  );
+
+
+  addPickableObject('out', 'https://jutamas6721601052.github.io/Interactive-Graphic-Paint/out.glb', 1.0, [], { useToonShader: true, enableWave: true });
+  addPickableObject('box', 'https://jutamas6721601052.github.io/Interactive-Graphic-Paint/box.glb', 1.0, []);
+
+  addEventListener('resize', () => {
+    camera.aspect = innerWidth / innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  });
+
+  function animate(time) {
+    requestAnimationFrame(animate);
+
+    globalUniforms.uTime.value = time * 0.001;
+
+    const delta = clock.getDelta();
+    mixers.forEach((mixer) => mixer.update(delta));
+
+    if (isFocusing) {
+      camera.position.lerp(targetCameraPos, 0.08);
+      controls.target.lerp(targetControlsTarget, 0.08);
+    }
+    controls.update();
+    renderer.render(scene, camera);
+  }
+
+  animate(0);
+</script>
 </body>
-
 </html>
